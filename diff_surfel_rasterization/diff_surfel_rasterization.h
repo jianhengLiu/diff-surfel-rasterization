@@ -20,6 +20,7 @@ public:
   bool prefiltered;
   bool debug;
 
+  RasterizationSettings() = default;
   RasterizationSettings(int image_height_, int image_width_, float tanfovx_,
                         float tanfovy_, const torch::Tensor &bg_,
                         float scale_modifier_, const torch::Tensor &viewmatrix_,
@@ -62,7 +63,7 @@ public:
 
   GaussianRasterizer(const RasterizationSettings &raster_settings_);
 
-  torch::Tensor markVisible(const torch::Tensor &positions);
+  torch::Tensor mark_visible(torch::Tensor &positions);
 
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &means3D, const torch::Tensor &means2D,

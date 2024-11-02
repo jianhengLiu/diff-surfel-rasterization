@@ -4,22 +4,26 @@
 
 namespace diff_surfel_rasterization {
 
-inline GaussianRasterizer::GaussianRasterizer(
+TORCH_LIBRARY(diff_surfel_rasterization, m) {
+  m.class_<RasterizationSettings>("RasterizationSettings").def(torch::init());
+}
+
+GaussianRasterizer::GaussianRasterizer(
     const RasterizationSettings &raster_settings_) {
   raster_settings_ivalue = torch::IValue(
       torch::make_intrusive<RasterizationSettings>(raster_settings_));
 }
 
-inline torch::Tensor
-GaussianRasterizer::markVisible(const torch::Tensor &positions) {
+torch::Tensor GaussianRasterizer::mark_visible(torch::Tensor &positions) {
   torch::NoGradGuard no_grad;
-  // Placeholder for _C.mark_visible function
-  // Implement the visibility check here
-  torch::Tensor visible;
+  auto raster_settings =
+      raster_settings_ivalue.toCustomClass<RasterizationSettings>();
+  torch::Tensor visible = markVisible(positions, raster_settings->viewmatrix,
+                                      raster_settings->projmatrix);
   return visible;
 }
 
-inline std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
 GaussianRasterizer::forward(
     const torch::Tensor &means3D, const torch::Tensor &means2D,
     const torch::Tensor &opacities, const torch::Tensor &shs,
