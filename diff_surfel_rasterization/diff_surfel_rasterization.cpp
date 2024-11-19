@@ -65,21 +65,19 @@ GaussianRasterizer::forward(
 // Note: You'll need to interface with your C++/CUDA rasterization backend (_C
 // module in Python)
 
-inline std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
-rasterize_gaussians(const torch::Tensor &means3D, const torch::Tensor &means2D,
-                    const torch::Tensor &sh,
-                    const torch::Tensor &colors_precomp,
-                    const torch::Tensor &opacities, const torch::Tensor &scales,
-                    const torch::Tensor &rotations,
-                    const torch::Tensor &cov3Ds_precomp,
-                    const torch::IValue &raster_settings_ivalue) {
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> rasterize_gaussians(
+    const torch::Tensor &means3D, const torch::Tensor &means2D,
+    const torch::Tensor &sh, const torch::Tensor &colors_precomp,
+    const torch::Tensor &opacities, const torch::Tensor &scales,
+    const torch::Tensor &rotations, const torch::Tensor &cov3Ds_precomp,
+    const torch::IValue &raster_settings_ivalue) {
   auto results = RasterizeGaussiansFunction::apply(
       means3D, means2D, sh, colors_precomp, opacities, scales, rotations,
       cov3Ds_precomp, raster_settings_ivalue);
   return std::make_tuple(results[0], results[1], results[2]);
 }
 
-inline torch::autograd::tensor_list RasterizeGaussiansFunction::forward(
+torch::autograd::tensor_list RasterizeGaussiansFunction::forward(
     torch::autograd::AutogradContext *ctx, const torch::Tensor &means3D,
     const torch::Tensor &means2D, const torch::Tensor &sh,
     const torch::Tensor &colors_precomp, const torch::Tensor &opacities,
@@ -88,12 +86,10 @@ inline torch::autograd::tensor_list RasterizeGaussiansFunction::forward(
     const torch::IValue &raster_settings_ivalue) {
 
   // Call the C++/CUDA rasterizer (Placeholder for _C.rasterize_gaussians)
-  int num_rendered;
-  torch::Tensor color, depth, radii, geomBuffer, binningBuffer, imgBuffer;
   auto raster_settings =
       raster_settings_ivalue.toCustomClass<RasterizationSettings>();
-  std::tie(num_rendered, color, depth, radii, geomBuffer, binningBuffer,
-           imgBuffer) =
+  auto [num_rendered, color, depth, radii, geomBuffer, binningBuffer,
+        imgBuffer] =
       RasterizeGaussiansCUDA(
           raster_settings->bg, means3D, colors_precomp, opacities, scales,
           rotations, raster_settings->scale_modifier, cov3Ds_precomp,
@@ -113,7 +109,7 @@ inline torch::autograd::tensor_list RasterizeGaussiansFunction::forward(
   return {color, radii, depth};
 }
 
-inline torch::autograd::tensor_list RasterizeGaussiansFunction::backward(
+torch::autograd::tensor_list RasterizeGaussiansFunction::backward(
     torch::autograd::AutogradContext *ctx,
     torch::autograd::tensor_list grad_outputs) {
   auto raster_settings_ivalue =
@@ -138,13 +134,8 @@ inline torch::autograd::tensor_list RasterizeGaussiansFunction::backward(
   auto grad_radii = grad_outputs[1];
   auto grad_depth = grad_outputs[2];
 
-  // Call the C++/CUDA backward function (Placeholder for
-  // _C.rasterize_gaussians_backward)
-  torch::Tensor grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D;
-  torch::Tensor grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations;
-
-  std::tie(grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D,
-           grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations) =
+  auto [grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D,
+        grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations] =
       RasterizeGaussiansBackwardCUDA(
           raster_settings->bg, means3D, radii, colors_precomp, scales,
           rotations, raster_settings->scale_modifier, cov3Ds_precomp,
